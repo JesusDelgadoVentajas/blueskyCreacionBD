@@ -3,3 +3,7 @@ contraseñas.properties
 
 # Los _pycaches de Python
 __pycache__/
+
+# el entorno virtual de Python
+venv/
+
