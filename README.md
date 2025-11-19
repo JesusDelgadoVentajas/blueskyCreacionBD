@@ -1,7 +1,7 @@
 # Proyecto Bluesky Data Extractor
 
 ## Descripción General
-Este proyecto permite la extracción y análisis de datos de usuarios y publicaciones de la red social Bluesky. Utiliza la API de Bluesky para autenticar usuarios, obtener seguidores y recopilar publicaciones. Además, incluye un detector de bots basado en redes neuronales simples.
+Este proyecto permite la extracción y análisis de datos de usuarios y publicaciones de la red social Bluesky. Utiliza la API de Bluesky para autenticar usuarios, obtener seguidores y recopilar publicaciones.
 
 ### Funcionalidades Principales
 1. **Autenticación y Seguidores**:
@@ -12,9 +12,6 @@ Este proyecto permite la extracción y análisis de datos de usuarios y publicac
 2. **Extracción de Publicaciones**:
    - Inicia sesión en Bluesky, carga perfiles de un archivo JSON, obtiene los posts de cada usuario y guarda los resultados en otro archivo JSON.
    - Diseñado para reanudar el proceso en caso de interrupciones o errores, evitando repetir trabajo ya realizado.
-
-3. **Detección de Bots**:
-   - Implementa una red neuronal simple para clasificar usuarios como bots o no bots usando datos de perfiles.
 
 ---
 
@@ -55,27 +52,19 @@ El archivo `main.py` es el punto de entrada principal del proyecto. Ejecuta la e
 python Main/main.py
 ```
 
-### Clases Principales
+### Detalles del Proceso
+1. **Obtención de Nuevos Usuarios**:
+   - Cuando ejecutas `main.py`, el script obtiene seguidores del usuario objetivo y los guarda en `profiles_to_scan.json`.
+   - Si el archivo ya existe, se añaden solo los nuevos seguidores, evitando duplicados.
 
-#### Clase `datosUsuario`
-- **Descripción**: Maneja la autenticación y obtención de seguidores de una cuenta Bluesky.
-- **Datos Obtenidos**:
-  - **Datos de usuario**: DID, handle, display_name, description, avatar, pronouns, created_at.
-  - **Datos de actividad**: indexed_at, labels, verification, status.
-  - **Datos de visor**: blocked_by, blocking, following, followed_by, muted.
-  - **Datos técnicos**: associated, py_type.
+2. **Extracción de Posts**:
+   - La clase `BlueskyPostsFetcher` procesa los perfiles en `profiles_to_scan.json`.
+   - Antes de procesar, verifica el progreso guardado en `posts_usuarios.json` y carga los `DID` de los usuarios cuyos posts ya han sido recogidos.
+   - Solo se procesan los usuarios que no están en `processed_dids`, es decir, aquellos cuyos posts aún no han sido recogidos.
 
-#### Clase `BlueskyPostsFetcher`
-- **Descripción**: Extrae posts de usuarios de Bluesky.
-- **Datos Obtenidos**:
-  - cid: Identificador único del contenido.
-  - uri: Identificador único del post.
-  - createdAt: Fecha y hora de creación.
-  - text: Contenido textual del post.
-  - replyCount: Número de respuestas.
-  - repostCount: Número de veces compartido.
-  - likeCount: Número de "me gusta".
-  - hasEmbed: Indica si contiene contenido incrustado.
+3. **Interrupciones en el Proceso**:
+   - Si el proceso de extracción de posts se detiene, el progreso se guarda automáticamente en `posts_usuarios.json`.
+   - Al reanudar el script, se procesan únicamente los usuarios pendientes.
 
 ---
 
@@ -91,8 +80,6 @@ bluesky2/
 │   ├── conexion.py
 ├── Main/
 │   ├── main.py
-├── Modelo/
-│   ├── octopus.py
 ├── usuarios/
 │   ├── info.py
 │   ├── post.py
@@ -102,7 +89,7 @@ bluesky2/
 
 ## Notas Adicionales
 - **Reanudar Procesos**: El proyecto está diseñado para reanudar procesos interrumpidos automáticamente.
-- **Detección de Bots**: Usa características como longitud del handle, avatar, y biografía para clasificar usuarios.
+- **Gestión de Usuarios y Posts**: Los usuarios nuevos se añaden a `profiles_to_scan.json`, y los posts pendientes se procesan de manera incremental.
 
 ---
 
@@ -112,4 +99,4 @@ Las contribuciones son bienvenidas. Por favor, abre un issue o envía un pull re
 ---
 
 ## Licencia
-Este proyecto está bajo la licencia MIT. (Permite el uso, copia, modificación y distribución del software).
+Este proyecto está bajo la licencia MIT.

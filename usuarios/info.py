@@ -7,22 +7,7 @@ from gestor.conexion import ConexionBluesky
 class datosUsuario:
     """
     Clase para manejar la autenticación y obtención de seguidores de una cuenta Bluesky.
-    Primero revisa si el archivo JSON ya existe para evitar duplicados, si existe, carga
-    los perfiles ya obtenidos, añadiendo solo los nuevos, y finalmente guarda todos los perfiles en el archivo JSON.
-    
-    Attributes:
-        handle (str): El identificador de la cuenta Bluesky.
-        app_password (str): La contraseña de la aplicación para la cuenta Bluesky.
-        client (Client): Instancia del cliente de la API de Bluesky.
-        logged_in (bool): Estado de inicio de sesión.
-        
-    Methods:
-        login(): Inicia sesión en la cuenta Bluesky.
-        fetch_followers(target_account_handle, profile_limit=1000, page_limit=100, sleep_between_pages=2):
-            Obtiene los seguidores de la cuenta objetivo.
-        save_profiles(profiles, output_filename="profiles_to_scan.json"): Guarda los perfiles obtenidos en un archivo JSON.    
     """
-    
     
     def __init__(self, handle=None, app_password=None):
         self.handle = handle or os.environ.get('BSKY_HANDLE')
@@ -36,21 +21,10 @@ class datosUsuario:
         """
         self.client = self.conexion.get_client()
 
-
-
     def fetch_followers(self, target_account_handle, profile_limit=1000, page_limit=100, sleep_between_pages=2):
         """
-        Obtiene los seguidores de la cuenta objetivo.
-        Args:
-            target_account_handle (str): El handle de la cuenta objetivo.
-            profile_limit (int): Número máximo de perfiles a obtener.
-            page_limit (int): Número de perfiles por página.
-            sleep_between_pages (int): Segundos a esperar entre solicitudes de página.
-        Returns:
-            list: Lista de perfiles de seguidores obtenidos.
-        Raises:
-            RuntimeError: Si no se ha iniciado sesión antes de llamar a este método.
-            """
+        Obtiene los seguidores. CORREGIDO: No espera 60s si el usuario no existe.
+        """
         
         if not self.client:
             raise RuntimeError("Debes iniciar sesión antes de obtener seguidores.")
@@ -85,26 +59,39 @@ class datosUsuario:
                     time.sleep(sleep_between_pages)
                     
                 except Exception as e:
-                    print(f"Error durante la solicitud a la API: {e}. Esperando 60s...")
-                    time.sleep(60)
+                    mensaje_error = str(e)
+                    
+                    # --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
+                    
+                    # Caso 1: El usuario no existe o está mal escrito
+                    if "Actor not found" in mensaje_error or "Profile not found" in mensaje_error:
+                        print(f"   [X] ERROR FATAL: La cuenta '{target_account_handle}' no existe. Saltando inmediatamente.")
+                        break # Rompe el bucle y deja de intentar con este usuario
+                    
+                    # Caso 2: Límite de velocidad de la API (Aquí sí esperamos)
+                    elif "RateLimit" in mensaje_error or "429" in mensaje_error:
+                        print(f"   [!] Límite de API alcanzado. Esperando 60s...")
+                        time.sleep(60)
+                        
+                    # Caso 3: Cualquier otro error desconocido
+                    else:
+                        print(f"   [!] Error desconocido: {e}. Saltando para evitar bucles infinitos.")
+                        break
                     
         except KeyboardInterrupt:
             print("\nProceso interrumpido.")
-        print(f"\nProceso finalizado. Total de perfiles obtenidos: {len(all_profiles)}")
+            
+        print(f"Proceso finalizado para {target_account_handle}. Total obtenidos: {len(all_profiles)}")
         return all_profiles
-
-
 
     def save_profiles(self, profiles, output_filename="profiles_to_scan.json"):
         """
-        Guarda los perfiles obtenidos en un archivo JSON, añadiendo a los existentes si el archivo ya existe.
-        Args:
-            profiles (list): Lista de perfiles a guardar.
-            output_filename (str): Nombre del archivo de salida.
+        Guarda los perfiles obtenidos en un archivo JSON.
         """
         if not profiles:
-            print("No hay perfiles para guardar.")
+            print("No hay perfiles nuevos para guardar de esta ejecución.")
             return
+            
         # Leer perfiles existentes si el archivo existe
         existing_profiles = []
         if os.path.exists(output_filename):
@@ -113,14 +100,21 @@ class datosUsuario:
                     existing_profiles = json.load(f)
             except Exception as e:
                 print(f"Advertencia: No se pudieron cargar perfiles existentes: {e}")
+                
         # Evitar duplicados por DID
         existing_dids = {p.get('did') for p in existing_profiles if 'did' in p}
         new_profiles = [p for p in profiles if p.get('did') not in existing_dids]
+        
+        if not new_profiles:
+            print("Todos los perfiles descargados ya existían en la base de datos.")
+            return
+
         all_profiles = existing_profiles + new_profiles
-        print(f"Guardando {len(new_profiles)} perfiles nuevos (total: {len(all_profiles)}) en {output_filename}...")
+        print(f"Guardando {len(new_profiles)} perfiles nuevos (total acumulado: {len(all_profiles)}) en {output_filename}...")
+        
         try:
             with open(output_filename, 'w', encoding='utf-8') as f:
                 json.dump(all_profiles, f, indent=4, ensure_ascii=False)
-            print(f"¡Datos guardados! Ahora puedes ejecutar 'fetch_posts.py'.")
+            print(f"¡Datos guardados correctamente!")
         except Exception as e:
             print(f"Error al guardar el archivo JSON: {e}")
