@@ -21,3 +21,19 @@ export BSKY_APP_PASSWORD="xxxx-xxxx-xxxx-xxxx" # Tu contraseña de aplicación
 # Configurar variables de entorno (Windows CMD)
 $env:BSKY_HANDLE = "tu_usuario.bsky.social"
 $env:BSKY_APP_PASSWORD = "aqui-va-la-contraseña-de-app-xxxx-xxxx"
+
+
+# APUNTES
+# Usar lo de twit boty 22
+# Agarrar como semilklas 10 personas muy famosas, y de esas descargar 5 usuarios al azar, etc.
+
+# Incluir as informacion a capturar, no solo la que tenemos: Follower and following counts.
+# Number of tweets, retweets, and likes.
+# Tweet frequency (temporal activity).
+# Account creation time.
+
+# Revisar los ultimos 1000 posts y documentar los repetidos
+
+# Palabras clave de los posts, chavismos, spam keywords. Los hastag repetidos, de 3-6 hastag en el mismo orden
+
+# Sheng recomienda usar una semilla distinta por cada tema, deportes, polituica, entretenimiento, tecnologia. Para tener un espectro más amplio

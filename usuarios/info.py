@@ -1,43 +1,14 @@
-# Este script maneja la autenticación y la obtención de seguidores de una cuenta Bluesky. Los seguidores se guardan en un archivo JSON para su posterior procesamiento.
-# Los seguidores se obtienen en páginas para manejar grandes cantidades de datos y evitar límites de la API. Con pausa entre solicitudes para respetar las políticas de la API.
-# Los datos conseguidos son:
-# 1. Datos de usuario:
-# - DID, el cual es el identificador único de cada usuario en Bluesky
-# - handle, que es el nombre de usuario público en Bluesky. El usuario puede cambiar su handle, pero el DID permanece constante.
-# - display_name, que es el nombre que el usuario elige mostrar en su perfil. Este puede incluir caracteres especiales y emojis.
-# - description, que es la biografía del usuario en su perfil.
-# - avatar, que es la URL de la imagen de perfil del usuario.
-# - pronouns, que son los pronombres que el usuario ha especificado en su perfil (si los ha proporcionado).
-# - created_at, que es la fecha y hora en que se creó la cuenta del usuario en Bluesky.
-
-# 2. Datos de actividad:
-# - indexed_at, que es la fecha y hora en la que la red de Bluesky indexó por última vez el perfil del usuario.
-# - labels, que son etiquetas asociadas al usuario, si vemos spam, impersonation, etc. significan que el usuario ha sido marcado por violar las reglas de la comunidad.
-# - verification, que indica si el usuario ha sido verificado por Bluesky, lo que generalmente significa que es una figura pública o una cuenta oficial.
-# - status, que indica el estado actual de la cuenta del usuario, como activo, suspendido, etc.
-
-# 3. Datos de visor (Tu relación con el usuario):
-# - blocked_by, false si no estás bloqueado por el usuario.
-# - blocking, false si no has bloqueado al usuario.
-# - following, si sigues al usuario.
-# - followed_by, si el usuario te sigue a ti.
-# - muted, si has silenciado al usuario.
-
-# 4. Datos técnicos:
-# - associated, que incluye información técnica sobre la cuenta del usuario, como si tiene una cuenta de invitado, si es una cuenta de servicio, etc.
-# - py_type, que es un campo técnico utilizado internamente por la API de Bluesky.
-
-
-
-
 import os
 import time
 import json
+
 from gestor.conexion import ConexionBluesky
 
 class datosUsuario:
     """
     Clase para manejar la autenticación y obtención de seguidores de una cuenta Bluesky.
+    Primero revisa si el archivo JSON ya existe para evitar duplicados, si existe, carga
+    los perfiles ya obtenidos, añadiendo solo los nuevos, y finalmente guarda todos los perfiles en el archivo JSON.
     
     Attributes:
         handle (str): El identificador de la cuenta Bluesky.
@@ -126,22 +97,30 @@ class datosUsuario:
 
     def save_profiles(self, profiles, output_filename="profiles_to_scan.json"):
         """
-        Guarda los perfiles obtenidos en un archivo JSON.
+        Guarda los perfiles obtenidos en un archivo JSON, añadiendo a los existentes si el archivo ya existe.
         Args:
             profiles (list): Lista de perfiles a guardar.
             output_filename (str): Nombre del archivo de salida.
         """
-        
         if not profiles:
             print("No hay perfiles para guardar.")
             return
-        
-        print(f"Guardando {len(profiles)} perfiles en {output_filename}...")
-        
+        # Leer perfiles existentes si el archivo existe
+        existing_profiles = []
+        if os.path.exists(output_filename):
+            try:
+                with open(output_filename, 'r', encoding='utf-8') as f:
+                    existing_profiles = json.load(f)
+            except Exception as e:
+                print(f"Advertencia: No se pudieron cargar perfiles existentes: {e}")
+        # Evitar duplicados por DID
+        existing_dids = {p.get('did') for p in existing_profiles if 'did' in p}
+        new_profiles = [p for p in profiles if p.get('did') not in existing_dids]
+        all_profiles = existing_profiles + new_profiles
+        print(f"Guardando {len(new_profiles)} perfiles nuevos (total: {len(all_profiles)}) en {output_filename}...")
         try:
             with open(output_filename, 'w', encoding='utf-8') as f:
-                json.dump(profiles, f, indent=4, ensure_ascii=False)
+                json.dump(all_profiles, f, indent=4, ensure_ascii=False)
             print(f"¡Datos guardados! Ahora puedes ejecutar 'fetch_posts.py'.")
-            
         except Exception as e:
             print(f"Error al guardar el archivo JSON: {e}")

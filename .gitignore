@@ -7,3 +7,6 @@ __pycache__/
 # el entorno virtual de Python
 venv/
 
+# Ignorar archivos de datos sensibles
+almacen/posts_usuarios.json
+almacen/profiles_to_scan.json

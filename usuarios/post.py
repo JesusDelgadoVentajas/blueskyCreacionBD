@@ -1,22 +1,7 @@
-# Este script inicia sesión en Bluesky, carga perfiles de un archivo JSON,
-# obtiene los posts de cada usuario y guarda los resultados en otro archivo JSON.
-# Esta diseñado para reanudar el proceso en caso de interrupciones o errores, para así evitar repetir trabajo ya realizado.
-
-# La informacion que se guarda incluye:
-# - cid, que es el Content Identifier del post. Este es un identificador único que apunta al contenido específico del post en la red de Bluesky.
-# - uri, que es el identificador único del post en Bluesky. Se diferencia del cid en que el uri es una referencia más amigable y legible para los usuarios,
-# mientras que el cid es más técnico y específico para la gestión del contenido en la red.
-# - createdAt, la fecha y hora de creación del post.
-# - text, que es el contenido textual del post.
-# - replyCount, que es el número de respuestas que ha recibido el post.
-# - repostCount, que es el número de veces que el post ha sido compartido por otros usuarios.
-# - likeCount, que es el número de "me gusta" que ha recibido el post.
-# - hasEmbed, que indica si el post contiene algún tipo de contenido incrustado, como imágenes, videos o enlaces.
-
-
 import os
-import time
 import json
+import time
+
 from gestor.conexion import ConexionBluesky
 
 class BlueskyPostsFetcher:
@@ -76,8 +61,16 @@ class BlueskyPostsFetcher:
                 self.processed_dids = set()
         else:
             print("No se encontró archivo de progreso. Empezando de cero.")
+            self.processed_data = {}
+            self.processed_dids = set()
+
+
 
     def load_profiles(self):
+        """
+        Carga los perfiles de usuarios desde el archivo JSON de entrada. Con esto se evitan duplicados.
+        """
+        
         try:
             with open(self.input_file, 'r', encoding='utf-8') as f:
                 self.profiles_to_scan = json.load(f)
@@ -85,16 +78,21 @@ class BlueskyPostsFetcher:
         except FileNotFoundError:
             raise FileNotFoundError(f"Error: No se encontró el archivo {self.input_file}. Asegúrate de ejecutar 'fetch_profiles.py' primero.")
 
+
+
     def process_profiles(self):
-        total_profiles = len(self.profiles_to_scan)
+        """
+        Procesa los perfiles cargados, obteniendo sus posts y guardando el progreso.
+        """
+        
+        # Solo procesar los perfiles cuyo DID no esté en processed_dids
+        perfiles_pendientes = [p for p in self.profiles_to_scan if p.get('did') not in self.processed_dids]
+        total_profiles = len(perfiles_pendientes)
         try:
-            for i, profile in enumerate(self.profiles_to_scan):
+            for i, profile in enumerate(perfiles_pendientes):
                 did = profile.get('did')
                 handle = profile.get('handle', 'N/A')
                 print(f"\n--- Procesando {i+1}/{total_profiles}: {handle} ({did}) ---")
-                if did in self.processed_dids:
-                    print("Resultado ya existe. Omitiendo.")
-                    continue
                 try:
                     response = self.client.get_author_feed(
                         actor=did,
@@ -134,12 +132,25 @@ class BlueskyPostsFetcher:
         except KeyboardInterrupt:
             print("\nProceso interrumpido por el usuario. El progreso ha sido guardado.")
 
+
+
     def save_progress(self):
+        """
+        Guarda el progreso actual en el archivo JSON de salida.
+                
+        """
+        
         with open(self.output_file, 'w', encoding='utf-8') as f:
             json.dump(self.processed_data, f, indent=2, ensure_ascii=False)
         print("Progreso guardado.")
 
+
+
     def run(self):
+        """
+        Ejecuta el proceso completo de extracción de posts.
+        """
+        
         self.login()
         self.load_progress()
         self.load_profiles()
