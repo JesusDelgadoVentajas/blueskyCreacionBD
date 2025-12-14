@@ -3,6 +3,7 @@ from pyspark.sql.functions import col, explode
 from carga_datos import CargaDatos
 from analizar_post import AnalizarPost
 from analizar_profiles import AnalizarProfiles
+import os
 
 def main():
     # Crear la SparkSession
@@ -15,9 +16,11 @@ def main():
     analizar_post = AnalizarPost(spark)
     analizar_profiles = AnalizarProfiles(spark)
 
-    # Rutas de los archivos JSON
-    ruta_posts = "../almacen/posts_usuarios.json"
-    ruta_profiles = "../almacen/profiles_to_scan.json"
+    # Rutas de los archivos JSON (relativas al script)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.dirname(script_dir)  # Directorio bluesky2
+    ruta_posts = os.path.join(base_dir, "almacen", "posts_usuarios.json")
+    ruta_profiles = os.path.join(base_dir, "almacen", "profiles_to_scan.json")
 
     # Cargar datos
     print("Cargando datos de posts...")
