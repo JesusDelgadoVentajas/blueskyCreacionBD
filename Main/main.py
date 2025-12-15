@@ -18,8 +18,8 @@ class MainApp:
         
         # --- CONFIGURACIÓN DE VOLUMEN ---
         # 12 semillas * 800 usuarios = ~9.600 usuarios
-        self.usuarios_por_semilla = 1000
-        self.pool_size = 1200
+        self.usuarios_por_semilla = 10
+        self.pool_size = 12
 
         # 3. Las Semillas (CUENTAS DE ALTA ESTABILIDAD)
         # He quitado cuentas personales dudosas y puesto grandes medios/instituciones
@@ -114,7 +114,8 @@ class MainApp:
                 handle=self.bsky_handle,
                 app_password=self.bsky_app_password,
                 input_file=os.path.basename(self.output_filename),
-                output_file=None
+                output_file=None,
+                posts_per_user_limit=25  # Máximo de posts a obtener por usuario
             )
             posts_fetcher.run()
 
