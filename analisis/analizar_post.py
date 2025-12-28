@@ -2,6 +2,7 @@
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, count, avg, max, min, stddev, expr, to_date
+from spark_utils import show_and_capture
 
 class AnalizarPost:
     def __init__(self, spark):
@@ -81,7 +82,11 @@ class AnalizarPost:
         """
         try:
             print(f"Frecuencias de los valores más comunes en la columna '{columna}':")
-            df.groupBy(columna).count().orderBy(col("count").desc()).show(limite)
+            show_and_capture(
+                df.groupBy(columna).count().orderBy(col("count").desc()),
+                f"Frecuencias en {columna}",
+                n=limite
+            )
         except Exception as e:
             print(f"Error al mostrar frecuencias para la columna '{columna}': {e}")
 
@@ -98,10 +103,16 @@ class AnalizarPost:
             print(f"Rango de fechas: {rango_fechas['Fecha mínima']} a {rango_fechas['Fecha máxima']}")
 
             print("Distribución por año:")
-            df.groupBy(expr("year(fecha)").alias("Año")).count().orderBy("Año").show()
+            show_and_capture(
+                df.groupBy(expr("year(fecha)").alias("Áño")).count().orderBy("Áño"),
+                "Distribución por año"
+            )
 
             print("Distribución por mes:")
-            df.groupBy(expr("year(fecha) as Año"), expr("month(fecha) as Mes")).count().orderBy("Año", "Mes").show()
+            show_and_capture(
+                df.groupBy(expr("year(fecha) as Áño"), expr("month(fecha) as Mes")).count().orderBy("Áño", "Mes"),
+                "Distribución por mes"
+            )
         except Exception as e:
             print(f"Error al analizar fechas en la columna '{columna_fecha}': {e}")
 

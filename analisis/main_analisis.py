@@ -1,6 +1,7 @@
 import os
 import sys
 from datetime import datetime
+from io import StringIO
 
 # Configurar UTF-8 para Windows
 if sys.platform == 'win32':
@@ -28,11 +29,16 @@ from pyspark.sql.functions import (
 from carga_datos import CargaDatos
 from analizar_post import AnalizarPost
 from analizar_profiles import AnalizarProfiles
+from exportador_markdown import ExportadorMarkdown
+import spark_utils
 
 
 # ═══════════════════════════════════════════════════════════
 # FUNCIONES HELPER PARA FORMATO
 # ═══════════════════════════════════════════════════════════
+
+# Variable global para el exportador (se inicializa en main)
+_exportador = None
 
 def print_banner(text):
     """Imprime un banner principal con el texto centrado"""
@@ -40,6 +46,9 @@ def print_banner(text):
     print("\n" + "═" * width)
     print(f"  {text.upper()}")
     print("═" * width + "\n")
+    
+    if _exportador:
+        _exportador.agregar_banner(text)
 
 
 def print_section(number, title):
@@ -48,6 +57,9 @@ def print_section(number, title):
     print("\n" + "━" * width)
     print(f"{number}. {title.upper()}")
     print("━" * width + "\n")
+    
+    if _exportador:
+        _exportador.agregar_seccion(number, title)
 
 
 def print_subsection(title):
@@ -55,18 +67,31 @@ def print_subsection(title):
     print(f"\n  {'─' * 80}")
     print(f"  {title}")
     print(f"  {'─' * 80}\n")
+    
+    if _exportador:
+        _exportador.agregar_subseccion(title)
 
 
 def print_metric(label, value, indent=2):
     """Imprime una métrica con formato"""
     spaces = " " * indent
     print(f"{spaces}• {label}: {value}")
+    
+    if _exportador:
+        _exportador.agregar_metrica(label, value)
 
 
 def print_timestamp(label):
     """Imprime un timestamp formateado"""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"\n[{label}] {now}")
+    
+    if _exportador:
+        _exportador.agregar_texto(f"\n**[{label}]** {now}\n")
+
+
+# Usar show_and_capture desde spark_utils
+show_and_capture = spark_utils.show_and_capture
 
 
 # ═══════════════════════════════════════════════════════════
@@ -85,9 +110,12 @@ def analizar_handles(df):
         )
         
         print("  Top 15 dominios más comunes:")
-        df_handles.groupBy("dominio").count() \
-            .orderBy(col("count").desc()) \
-            .show(15, truncate=False)
+        show_and_capture(
+            df_handles.groupBy("dominio").count().orderBy(col("count").desc()),
+            "Top 15 dominios más comunes",
+            n=15,
+            truncate=False
+        )
         
         # Handles sin dominio bsky.social
         non_bsky = df_handles.filter(~col("handle").endswith(".bsky.social")).count()
@@ -184,10 +212,12 @@ def analizar_tendencias_temporales(df):
         df_temporal = df_temporal.withColumn("anio", year(col("fecha_creacion")))
         
         print("  Distribución por año y trimestre:")
-        df_temporal.groupBy("anio", "trimestre") \
-            .count() \
-            .orderBy("anio", "trimestre") \
-            .show(20, truncate=False)
+        show_and_capture(
+            df_temporal.groupBy("anio", "trimestre").count().orderBy("anio", "trimestre"),
+            "Distribución por año y trimestre",
+            n=20,
+            truncate=False
+        )
         
     except Exception as e:
         print(f"  ⚠️  Error al analizar tendencias temporales: {e}")
@@ -216,11 +246,12 @@ def analizar_labels(df):
             df_labels_exploded = df_labels.select(explode(col("labels")).alias("label"))
             
             print("\n  Top valores de labels (campo 'val'):")
-            df_labels_exploded.select("label.val") \
-                .groupBy("val") \
-                .count() \
-                .orderBy(col("count").desc()) \
-                .show(10, truncate=False)
+            show_and_capture(
+                df_labels_exploded.select("label.val").groupBy("val").count().orderBy(col("count").desc()),
+                "Top valores de labels",
+                n=10,
+                truncate=False
+            )
         
     except Exception as e:
         print(f"  ⚠️  Error al analizar labels: {e}")
@@ -273,10 +304,12 @@ def analizar_posts_temporales(df_posts_exploded):
         
         # Por año/mes
         print("  Distribución por año:")
-        df_temporal.groupBy(year(col("fecha_post")).alias("Año")) \
-            .count() \
-            .orderBy("Año") \
-            .show(10, truncate=False)
+        show_and_capture(
+            df_temporal.groupBy(year(col("fecha_post")).alias("Año")).count().orderBy("Año"),
+            "Distribución por año",
+            n=10,
+            truncate=False
+        )
         
         # Por hora del día
         df_hora = df_posts_exploded.withColumn(
@@ -285,10 +318,12 @@ def analizar_posts_temporales(df_posts_exploded):
         )
         
         print("\n  Distribución por hora del día:")
-        df_hora.groupBy("hora") \
-            .count() \
-            .orderBy("hora") \
-            .show(24, truncate=False)
+        show_and_capture(
+            df_hora.groupBy("hora").count().orderBy("hora"),
+            "Distribución por hora del día",
+            n=24,
+            truncate=False
+        )
         
         # Por día de la semana (1=Domingo, 7=Sábado)
         df_dia = df_posts_exploded.withColumn(
@@ -297,10 +332,12 @@ def analizar_posts_temporales(df_posts_exploded):
         )
         
         print("\n  Distribución por día de la semana (1=Domingo, 7=Sábado):")
-        df_dia.groupBy("dia_semana") \
-            .count() \
-            .orderBy("dia_semana") \
-            .show(7, truncate=False)
+        show_and_capture(
+            df_dia.groupBy("dia_semana").count().orderBy("dia_semana"),
+            "Distribución por día de la semana",
+            n=7,
+            truncate=False
+        )
         
     except Exception as e:
         print(f"  ⚠️  Error al analizar temporalidad de posts: {e}")
@@ -329,8 +366,12 @@ def analizar_posts_por_usuario(df_posts, df_posts_exploded):
         print_metric("Posts por usuario - Desviación estándar", f"{stats['stddev']:.2f}")
         
         print("\n  Top 10 usuarios con más posts:")
-        posts_por_usuario.orderBy(col("num_posts").desc()) \
-            .show(10, truncate=False)
+        show_and_capture(
+            posts_por_usuario.orderBy(col("num_posts").desc()),
+            "Top 10 usuarios con más posts",
+            n=10,
+            truncate=False
+        )
         
     except Exception as e:
         print(f"  ⚠️  Error al analizar posts por usuario: {e}")
@@ -341,7 +382,20 @@ def analizar_posts_por_usuario(df_posts, df_posts_exploded):
 # ═══════════════════════════════════════════════════════════
 
 def main():
+    global _exportador
+    
     inicio = datetime.now()
+    
+    # Inicializar exportador Markdown
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(script_dir, 'resultados')
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, 'analisis_descriptivo.md')
+    
+    _exportador = ExportadorMarkdown(output_file)
+    
+    # Configurar el exportador global para que lo usen todas las clases
+    spark_utils.set_exportador(_exportador)
     
     # Banner principal
     print_banner("ANÁLISIS DESCRIPTIVO DE DATOS - BLUESKY")
@@ -533,6 +587,11 @@ def main():
     
     print_timestamp("Finalización del análisis")
     print(f"\n⏱️  Tiempo total de ejecución: {duracion:.2f} segundos\n")
+    
+    # Guardar reporte Markdown
+    if _exportador:
+        archivo_generado = _exportador.guardar()
+        print(f"\n📄 Reporte Markdown generado: {archivo_generado}")
     
     print("═" * 100)
     print("  FIN DEL ANÁLISIS")

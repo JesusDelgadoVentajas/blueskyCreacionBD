@@ -1,4 +1,5 @@
 from pyspark.sql.functions import col, count, expr, to_date, min, max, avg
+from spark_utils import show_and_capture
 
 class AnalizarProfiles:
     def __init__(self, spark):
@@ -38,10 +39,16 @@ class AnalizarProfiles:
         """
         try:
             print("Distribución por categoría de origen:")
-            df.groupBy("origen_categoria").count().orderBy(col("count").desc()).show()
+            show_and_capture(
+                df.groupBy("origen_categoria").count().orderBy(col("count").desc()),
+                "Distribución por categoría de origen"
+            )
 
             print("Distribución por semilla de origen:")
-            df.groupBy("origen_semilla").count().orderBy(col("count").desc()).show()
+            show_and_capture(
+                df.groupBy("origen_semilla").count().orderBy(col("count").desc()),
+                "Distribución por semilla de origen"
+            )
         except Exception as e:
             print(f"Error al analizar los orígenes: {e}")
 
@@ -57,10 +64,16 @@ class AnalizarProfiles:
             print(f"Rango de fechas de creación: {rango_fechas['Fecha mínima']} a {rango_fechas['Fecha máxima']}")
 
             print("Distribución por año de creación:")
-            df.groupBy(expr("year(fecha_creacion)").alias("Anio")).count().orderBy("Anio").show()
+            show_and_capture(
+                df.groupBy(expr("year(fecha_creacion)").alias("Anio")).count().orderBy("Anio"),
+                "Distribución por año de creación"
+            )
 
             print("Distribución por mes de creación:")
-            df.groupBy(expr("year(fecha_creacion) as Anio"), expr("month(fecha_creacion) as Mes")).count().orderBy("Anio", "Mes").show()
+            show_and_capture(
+                df.groupBy(expr("year(fecha_creacion) as Anio"), expr("month(fecha_creacion) as Mes")).count().orderBy("Anio", "Mes"),
+                "Distribución por mes de creación"
+            )
         except Exception as e:
             print(f"Error al analizar las fechas de creación: {e}")
 
@@ -93,6 +106,9 @@ class AnalizarProfiles:
         """
         try:
             print("Distribución de perfiles verificados y no verificados:")
-            df.groupBy("verification").count().orderBy(col("count").desc()).show()
+            show_and_capture(
+                df.groupBy("verification").count().orderBy(col("count").desc()),
+                "Distribución por estado de verificación"
+            )
         except Exception as e:
             print(f"Error al analizar el estado de verificación: {e}")
