@@ -87,7 +87,7 @@ modelo:
 # ───────────────────────────────────────────────────────────────
 prediccion:
   # Usuario a analizar (modificar aquí para predecir)
-  target_handle: ""  # Dejar vacío o poner handle, ej: "elon.musk"
+  target_handle: "bsky.app"  # Dejar vacío o poner handle
   target_did: ""     # Dejar vacío o poner DID
   
   # Número de posts a analizar para extraer features
