@@ -1,0 +1,127 @@
+# ═══════════════════════════════════════════════════════════════
+# CONFIGURACIÓN DEL DETECTOR DE BOTS
+# ═══════════════════════════════════════════════════════════════
+
+# ───────────────────────────────────────────────────────────────
+# RUTAS DE DATOS
+# ───────────────────────────────────────────────────────────────
+rutas:
+  # Archivos de entrada (datos originales)
+  profiles_input: "../almacen/profiles_to_scan.json"
+  posts_input: "../almacen/posts_usuarios.json"
+  
+  # Archivos de salida (generados por el sistema)
+  dataset_etiquetado: "datos/dataset_etiquetado.csv"
+  dataset_features: "datos/features_extracted.csv"
+  
+  # Modelos entrenados
+  modelo_xgboost: "modelos/bot_detector.pkl"
+  feature_scaler: "modelos/feature_scaler.pkl"
+  feature_columns: "modelos/feature_columns.pkl"
+
+# ───────────────────────────────────────────────────────────────
+# CONFIGURACIÓN DE ETIQUETADO HEURÍSTICO
+# ───────────────────────────────────────────────────────────────
+heuristicas:
+  # UMBRALES ULTRA-AGRESIVOS para minimizar inciertos a <5%
+  # Objetivo: Clasificar >95% de perfiles, tolerando menor precisión inicial
+  min_score_bot: 0.5      # Si score ≤ -0.5 → Bot (ULTRA BAJO)
+  min_score_humano: 0.8   # Si score ≥ +0.8 → Humano (ULTRA BAJO)
+  # Perfil con score entre -0.5 y +0.8 → Incierto (RANGO MÍNIMO: 1.3 pts)
+  
+  # Reglas para identificar BOTS
+  reglas_bot:
+    - nombre: "cuenta_nueva_muy_activa"
+      condicion: "account_age_days < 30 AND posts_count > 500"
+      
+    - nombre: "ratio_followers_bajo"
+      condicion: "followers_count < 10 AND following_count > 1000"
+      
+    - nombre: "sin_personalizacion"
+      condicion: "has_avatar == 0 AND bio_length < 10"
+      
+    - nombre: "handle_sospechoso"
+      condicion: "handle_has_many_numbers == 1"  # Ej: user12345678
+      
+    - nombre: "posts_muy_frecuentes"
+      condicion: "posts_per_day > 50"
+  
+  # Reglas para identificar HUMANOS
+  reglas_humano:
+    - nombre: "cuenta_antigua"
+      condicion: "account_age_days > 365"
+      
+    - nombre: "perfil_completo"
+      condicion: "has_avatar == 1 AND bio_length > 50"
+      
+    - nombre: "engagement_normal"
+      condicion: "followers_count > 100 AND followers_ratio > 0.1"
+      
+    - nombre: "actividad_moderada"
+      condicion: "posts_per_day < 10 AND posts_per_day > 0.1"
+
+# ───────────────────────────────────────────────────────────────
+# CONFIGURACIÓN DEL MODELO
+# ───────────────────────────────────────────────────────────────
+modelo:
+  # Parámetros de XGBoost
+  xgboost:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+    min_child_weight: 1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    random_state: 42
+  
+  # División del dataset
+  train_test_split:
+    test_size: 0.2
+    random_state: 42
+  
+  # Threshold de clasificación
+  threshold_bot: 0.7  # Si prob > 0.7 → clasifica como bot
+
+# ───────────────────────────────────────────────────────────────
+# CONFIGURACIÓN DE PREDICCIÓN
+# ───────────────────────────────────────────────────────────────
+prediccion:
+  # Usuario a analizar (modificar aquí para predecir)
+  target_handle: ""  # Dejar vacío o poner handle, ej: "elon.musk"
+  target_did: ""     # Dejar vacío o poner DID
+  
+  # Número de posts a analizar para extraer features
+  num_posts_analizar: 25
+  
+  # Mostrar detalles de los features
+  mostrar_features: true
+  mostrar_top_factores: 5  # Top N factores más importantes
+
+# ───────────────────────────────────────────────────────────────
+# FEATURES A EXTRAER
+# ───────────────────────────────────────────────────────────────
+features:
+  # Features de perfil
+  perfil:
+    - account_age_days
+    - followers_count
+    - following_count
+    - followers_ratio
+    - posts_count
+    - has_avatar
+    - bio_length
+    - display_name_length
+    - handle_has_many_numbers
+  
+  # Features de comportamiento (basados en posts)
+  comportamiento:
+    - posts_per_day
+    - avg_post_length
+    - std_post_length
+    - post_interval_std
+    - night_posts_ratio
+    - repost_ratio
+    - url_ratio
+    - avg_engagement
+    - vocabulary_diversity
+    - post_similarity_avg

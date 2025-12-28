@@ -1,0 +1,17 @@
+# Datasets generados
+datos/*.csv
+datos/*.json
+
+# Modelos entrenados
+modelos/*.pkl
+modelos/*.csv
+
+# Cache de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos temporales
+*.tmp
+*.log
