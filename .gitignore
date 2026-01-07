@@ -13,9 +13,8 @@ __pycache__/
 venv/
 env/
 
-# Ignorar archivos de datos sensibles
-almacen/posts_usuarios.json
-almacen/profiles_to_scan.json
+# Datos sensibles - Información personal de usuarios
+almacen/
 
 # Modelos ML y datos (potencialmente sensibles)
 prediccion/modelos/*.pkl
