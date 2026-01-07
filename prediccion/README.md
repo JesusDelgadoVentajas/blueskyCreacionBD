@@ -80,53 +80,46 @@ prediccion/
 
 ---
 
-## 📊 Features Implementados (18 total)
+## 📊 Variables y Sistema de Puntuación (Scoring)
 
-### Perfil (9)
-1. `account_age_days` - Edad de la cuenta
-2. `followers_count` - Número de seguidores
-3. `following_count` - Número de seguidos
-4. `followers_ratio` - Ratio followers/following
-5. `posts_count` - Total de posts
-6. `has_avatar` - Tiene avatar (0/1)
-7. `bio_length` - Longitud de la biografía
-8. `display_name_length` - Longitud del nombre
-9. `handle_has_many_numbers` - Handle con patrón numérico (0/1)
+El sistema utiliza una "calculadora de reputación" basada en **18 variables**. Cada perfil comienza con 0 puntos. Según sus características, suma (humano) o resta (bot) puntos.
 
-### Comportamiento de Posts (9)
-10. `posts_per_day` - Posts promedio por día
-11. `avg_post_length` - Longitud promedio de posts
-12. `std_post_length` - Desviación estándar de longitud
-13. `post_interval_std` - Regularidad temporal de posts
-14. `night_posts_ratio` - % de posts nocturnos (00:00-06:00)
-15. `repost_ratio` - % de reposts
-16. `url_ratio` - % de posts con URLs
-17. `avg_engagement` - Engagement promedio (likes + replies)
-18. `vocabulary_diversity` - Diversidad de vocabulario
-19. `post_similarity_avg` - Similitud promedio entre posts
+### 🔴 Indicios de BOT (Restan puntos)
+*Señales de comportamiento anómalo o automatizado.*
 
----
+| Variable | Condición | Puntos | Razón Técnica |
+|----------|-----------|--------|---------------|
+| **Perfil Fantasma** | `has_avatar`=0 Y `bio_length`<10 | **-4.0** | Abandono total de personalización. |
+| **Hiperactividad** | `posts_per_day` > 100 | **-3.5** | Físicamente imposible para un humano sostener este ritmo. |
+| **Bebé Spam** | `account_age` < 30d Y `posts` > 300 | **-3.5** | Patrón de creación de cuenta para ataque masivo inmediato. |
+| **Ratio Abismal** | `ratio` < 0.01 Y `following` > 500 | **-3.0** | Follow-for-follow fallido (sigue a miles, nadie le sigue). |
+| **Nombre de Serie** | `handle_has_many_numbers` = True | **-2.5** | Nombres generados por script (ej: `alex192834`). |
+| **Sin Avatar** | `has_avatar` = 0 | **-2.0** | Cuenta 'huevo', descuido típico de bots masivos. |
+| **Cadencia Robótica** | `post_interval_std` < 5 seg | **-2.0** | Publica con precisión matemática (cron job). |
+| **Amplificador** | `repost_ratio` > 0.8 | **-2.0** | Cuenta dedicada exclusivamente a hacer RT (granja de likes). |
+| **Vampiro** | `night_posts_ratio` > 0.4 | **-1.5** | Actividad predominante en horario de sueño (00h-06h). |
 
-## 🔧 Heurísticas de Etiquetado
+### 🟢 Indicios de HUMANO (Suman puntos)
+*Señales de esfuerzo, coherencia y vida social.*
 
-### Reglas para Identificar Bots (8)
-- Cuenta nueva (<30 días) + muy activa (>500 posts)
-- Muy pocos seguidores (<10) y muchos seguidos (>1000)
-- Sin avatar + bio vacía
-- Handle con muchos números (ej: `user12345678`)
-- Posts muy frecuentes (>50 por día)
-- Intervalos de posts muy regulares (baja desviación estándar)
-- Muchos posts nocturnos (actividad 24/7)
-- Alta ratio de reposts (>70%)
+| Variable | Condición | Puntos | Razón Técnica |
+|----------|-----------|--------|---------------|
+| **Perfil Premium** | `has_avatar`=1 Y `bio` > 100 char | **+3.0** | Alta inversión de tiempo en personalizar la identidad. |
+| **Veteranía** | `account_age` > 2 años | **+2.5** | Las redes de bots suelen ser efímeras y recientes. |
+| **Prueba Social** | `followers` > 1000 | **+2.5** | Difícil de conseguir orgánicamente para un bot simple. |
+| **Ratio Saludable** | `followers_ratio` > 0.5 | **+2.0** | Tiene al menos 1 seguidor por cada 2 seguidos. |
+| **Poeta** | `vocabulary_diversity` > 0.6 | **+2.0** | Riqueza léxica alta (no repite frases prefabricadas). |
+| **Ritmo Humano** | `posts_per_day` entre 1 y 15 | **+2.0** | Rango habitual de actividad de una persona real. |
+| **Engagement** | `avg_engagement` > 10 | **+2.0** | Recibe respuestas y likes reales de la comunidad. |
+| **Originalidad** | `post_similarity` < 0.2 | **+1.5** | Sus posts son muy distintos entre sí (baja repetición). |
 
-### Reglas para Identificar Humanos (7)
-- Cuenta antigua (>1 año)
-- Perfil completo (avatar + bio >50 chars)
-- Engagement saludable (>100 followers, ratio >0.1)
-- Actividad moderada (0.1-10 posts/día)
-- Alta diversidad de vocabulario
-- Contenido variado (baja similitud entre posts)
-- Alto engagement (>10 likes promedio)
+### ⚖️ Veredicto Final (Umbrales)
+
+La calculadora suma todos los puntos y aplica estos cortes para etiquetar el dataset de entrenamiento:
+
+*   🤖 **BOT**: Puntuación Total **≤ -0.5**
+*   👤 **HUMANO**: Puntuación Total **≥ 0.8**
+*   ❓ **INCIERTO**: Entre -0.5 y 0.8 (Se descartan para mantener la pureza de los datos).
 
 ---
 
