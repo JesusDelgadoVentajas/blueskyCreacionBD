@@ -6,7 +6,7 @@ Security notes:
 - Models are loaded using `seguridad.SecureModelHandler` and checksums are verified.
 
 Usage (development):
-  pip install Flask
+  pip install -r requirements.txt
   export BSKY_HANDLE=your_handle
   export BSKY_APP_PASSWORD=your_app_password
   python web/app.py

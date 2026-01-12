@@ -63,7 +63,7 @@ Cómo usarla (desarrollo):
 
 ```bash
 source .venv/bin/activate
-pip install Flask
+pip install -r requirements.txt
 export BSKY_HANDLE=your_handle
 export BSKY_APP_PASSWORD=your_app_password
 python web/app.py
