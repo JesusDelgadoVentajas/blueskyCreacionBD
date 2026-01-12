@@ -17,11 +17,11 @@ Este proyecto permite:
 ### Instalación de Dependencias
 
 ```bash
-# Dependencias principales
-pip install atproto pyspark xgboost scikit-learn pandas pyyaml numpy
-
-# O desde requirements.txt (si existe)
+# Opción recomendada: instalar desde requirements.txt
 pip install -r requirements.txt
+
+# O instalar manualmente las dependencias principales:
+pip install atproto pyspark xgboost scikit-learn pandas pyyaml numpy matplotlib seaborn flask
 ```
 
 ### Configuración de Credenciales
@@ -84,8 +84,14 @@ bluesky2/
 │   └── profiles_to_scan.json     # Perfiles escaneados
 │
 ├── analisis/                     # Análisis descriptivo (PySpark)
-│   ├── main_analisis.py          # Script principal
-│   └── resultados/               # Resultados del análisis
+│   ├── main_analisis.py          # Script principal de análisis
+│   ├── generar_graficos.py       # Generación de 25-30 gráficos
+│   ├── exportador_markdown.py    # Exporta resultados a Markdown
+│   ├── carga_datos.py            # Carga segura de datos JSON
+│   ├── analizar_profiles.py      # Análisis de perfiles
+│   ├── analizar_post.py          # Análisis de publicaciones
+│   ├── spark_utils.py            # Configuración de Spark
+│   └── resultados/               # Resultados y gráficos generados
 │
 ├── configuracion/                # Configuración centralizada
 │   ├── config.yaml               # Configuración principal
@@ -99,7 +105,13 @@ bluesky2/
 │
 ├── prediccion/                   # Detección de bots (ML)
 │   ├── scripts/                  # Scripts del pipeline
+│   │   ├── 1_etiquetar_datos.py  # Etiquetado automático
+│   │   ├── 2_entrenar_modelo.py  # Entrenamiento XGBoost
+│   │   ├── 3_predecir.py         # Predicción de bots
+│   │   └── check_results.py      # Verificación de resultados
 │   ├── utils/                    # Utilidades
+│   │   ├── feature_extraction.py # Extracción de características
+│   │   └── heuristics.py         # Reglas heurísticas
 │   ├── datos/                    # Datasets generados
 │   └── modelos/                  # Modelos entrenados
 │
@@ -107,9 +119,18 @@ bluesky2/
 │   ├── secure_file_handler.py    # Manejo seguro de archivos
 │   └── secure_model_handler.py   # Manejo seguro de modelos
 │
-└── usuarios/                     # Obtención de usuarios
-    ├── info.py                   # Extracción de perfiles
-    └── post.py                   # Extracción de posts
+├── usuarios/                     # Obtención de usuarios
+│   ├── info.py                   # Extracción de perfiles
+│   └── post.py                   # Extracción de posts
+│
+├── web/                          # Interfaz web (Flask)
+│   ├── app.py                    # Aplicación Flask
+│   ├── templates/                # Plantillas HTML
+│   └── static/                   # Archivos estáticos (CSS/JS)
+│
+├── EXPLICACION_NO_TECNICA_SCRIPTS.md  # Guía no técnica
+├── SECURITY_REPORT.md            # Reporte de seguridad
+└── verificar_seguridad.py        # Script de auditoría
 ```
 
 ---
@@ -150,7 +171,11 @@ spark:
 ### 2. Análisis Descriptivo
 - **Ubicación**: `analisis/`
 - **Función**: Analiza patrones de perfiles y publicaciones con PySpark
-- **Salida**: `analisis/resultados/analisis_descriptivo.md`
+- **Características nuevas**:
+  - Genera automáticamente reporte Markdown completo
+  - Crea 25-30 gráficos visuales (histogramas, mapas de calor, evolución temporal)
+  - Exporta tablas Spark formateadas
+- **Salida**: `analisis/resultados/analisis_descriptivo.md` + gráficos PNG
 - **Documentación**: Ver [`analisis/README.md`](analisis/README.md)
 
 ### 3. Detección de Bots
@@ -160,11 +185,21 @@ spark:
 - **Precision**: ~85-92%
 - **Documentación**: Ver [`prediccion/README.md`](prediccion/README.md)
 
-### 4. Seguridad
+### 4. Interfaz Web
+- **Ubicación**: `web/`
+- **Función**: Interfaz web Flask para análisis interactivo de usuarios
+- **Características**:
+  - Analiza cualquier handle o DID de Bluesky
+  - Muestra probabilidad de bot en tiempo real
+  - Visualiza características extraídas
+- **Uso**: `python web/app.py` (requiere credenciales en variables de entorno)
+- **Documentación**: Ver [`web/README.md`](web/README.md)
+
+### 5. Seguridad
 - **Ubicación**: `seguridad/`
 - **Función**: Protección contra path traversal, pickle RCE, y más
 - **Funciones**: Checksums SHA-256, validacion de rutas, permisos restrictivos
-- **Documentación**: Ver [`seguridad/README.md`](seguridad/README.md)
+- **Documentación**: Ver [`seguridad/README.md`](seguridad/README.md) y [`SECURITY_REPORT.md`](SECURITY_REPORT.md)
 
 ---
 
@@ -245,8 +280,10 @@ python verificar_seguridad.py
 - **Análisis**: [`analisis/README.md`](analisis/README.md)
 - **Configuración**: [`configuracion/README.md`](configuracion/README.md)
 - **Predicción**: [`prediccion/README.md`](prediccion/README.md)
-- **Seguridad**: [`seguridad/README.md`](seguridad/README.md)
+- **Seguridad**: [`seguridad/README.md`](seguridad/README.md) | [`SECURITY_REPORT.md`](SECURITY_REPORT.md)
 - **Usuarios**: [`usuarios/README.md`](usuarios/README.md)
+- **Interfaz Web**: [`web/README.md`](web/README.md)
+- **Guía No Técnica**: [`EXPLICACION_NO_TECNICA_SCRIPTS.md`](EXPLICACION_NO_TECNICA_SCRIPTS.md)
 
 ---
 
@@ -254,9 +291,12 @@ python verificar_seguridad.py
 
 - ✅ Extracción de perfiles y posts
 - ✅ Análisis descriptivo con PySpark
-- ✅ Sistema de detección de bots con XGBoost
-- ✅ Módulo de seguridad implementado
-- ✅ Configuración centralizada
+- ✅ Generación automática de reportes Markdown con gráficos
+- ✅ Sistema de detección de bots con XGBoost (18 características)
+- ✅ Interfaz web Flask para predicción interactiva
+- ✅ Módulo de seguridad implementado (checksums, validación de rutas)
+- ✅ Configuración centralizada (YAML)
+- ✅ Documentación técnica y no técnica completa
 - ⏳ Scraping completo de todos los usuarios (~77.6% pendiente)
 
 ---
