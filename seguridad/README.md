@@ -98,7 +98,7 @@ for r in resultados:
 Ejecuta el script de auditoría:
 
 ```bash
-python verificar_seguridad.py
+python seguridad/verificar_seguridad.py
 ```
 
 Este script verifica:

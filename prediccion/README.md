@@ -252,7 +252,7 @@ Verificar integridad de modelos:
 
 ```bash
 cd ..
-python verificar_seguridad.py
+python seguridad/verificar_seguridad.py
 ```
 
 ---

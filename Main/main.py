@@ -3,8 +3,8 @@ import os
 import random
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from usuarios.info import datosUsuario
-from usuarios.post import BlueskyPostsFetcher
+from gestor.info import datosUsuario
+from gestor.post import BlueskyPostsFetcher
 from configuracion.load_config import config
 
 class MainApp:

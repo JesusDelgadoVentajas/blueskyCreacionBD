@@ -97,8 +97,10 @@ bluesky2/
 │   ├── config.yaml               # Configuración principal
 │   └── load_config.py            # Cargador de configuración
 │
-├── gestor/                       # Gestión de conexiones
-│   └── conexion.py               # Cliente Bluesky
+├── gestor/                       # Gestión de conexiones y usuarios
+│   ├── conexion.py               # Cliente Bluesky
+│   ├── info.py                   # Extracción de perfiles
+│   └── post.py                   # Extracción de posts
 │
 ├── Main/                         # Scripts principales
 │   └── main.py                   # Extracción de datos
@@ -117,11 +119,8 @@ bluesky2/
 │
 ├── seguridad/                    # Módulo de seguridad
 │   ├── secure_file_handler.py    # Manejo seguro de archivos
-│   └── secure_model_handler.py   # Manejo seguro de modelos
-│
-├── usuarios/                     # Obtención de usuarios
-│   ├── info.py                   # Extracción de perfiles
-│   └── post.py                   # Extracción de posts
+│   ├── secure_model_handler.py   # Manejo seguro de modelos
+│   └── verificar_seguridad.py    # Script de auditoría
 │
 ├── web/                          # Interfaz web (Flask)
 │   ├── app.py                    # Aplicación Flask
@@ -129,8 +128,7 @@ bluesky2/
 │   └── static/                   # Archivos estáticos (CSS/JS)
 │
 ├── EXPLICACION_NO_TECNICA_SCRIPTS.md  # Guía no técnica
-├── SECURITY_REPORT.md            # Reporte de seguridad
-└── verificar_seguridad.py        # Script de auditoría
+└── SECURITY_REPORT.md            # Reporte de seguridad
 ```
 
 ---
@@ -232,7 +230,7 @@ El proyecto implementa varias capas de seguridad:
 
 Verificar seguridad del sistema:
 ```bash
-python verificar_seguridad.py
+python seguridad/verificar_seguridad.py
 ```
 
 ---
