@@ -31,3 +31,6 @@ logs/
 *.bak
 *~
 .DS_Store
+
+# Fichero del coverage: El .coverage
+.coverage

@@ -16,5 +16,7 @@ seaborn==0.13.2          # Statistical data visualization
 # Web interface
 flask==3.1.2             # Web framework for bot predictor UI
 
-# Optional / dev
-# gunicorn==21.0.0       # For production deployments
+# Testing
+pytest==9.0.2            # Testing framework
+pytest-cov==7.0.0        # Coverage reporting
+pytest-mock==3.15.1      # Mocking framework
