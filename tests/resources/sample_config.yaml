@@ -1,0 +1,17 @@
+scraping:
+  usuarios_por_semilla: 5
+  pool_size: 10
+  page_limit: 2
+
+posts:
+  posts_por_usuario_limite: 10
+  delay_entre_requests: 0.5
+
+rutas:
+  directorio_almacen: "almacen"
+  archivo_profiles: "profiles_to_scan.json"
+  archivo_posts: "posts_usuarios.json"
+
+spark:
+  driver_memory: "2g"
+  executor_memory: "2g"
