@@ -47,6 +47,74 @@ def load_prediction_components():
     return FeatureExtractor, SecureModelHandler, ConexionBluesky
 
 
+def generar_explicacion(features, prob_bot, es_bot):
+    """Genera una explicación detallada con frase principal y 5 puntos específicos."""
+    puntos = []
+    
+    # Analizar ratio seguidores/seguidos
+    ratio = features.get('follower_following_ratio', 0)
+    followers = features.get('followers_count', 0)
+    following = features.get('following_count', 0)
+    if ratio < 0.1:
+        puntos.append(f"Ratio seguidores/seguidos muy bajo ({ratio:.2f}): sigue a {following} cuentas pero solo tiene {followers} seguidores")
+    elif ratio > 10:
+        puntos.append(f"Ratio seguidores/seguidos muy alto ({ratio:.2f}): tiene {followers} seguidores pero solo sigue a {following} cuentas")
+    else:
+        puntos.append(f"Ratio seguidores/seguidos equilibrado ({ratio:.2f}): {followers} seguidores y {following} seguidos")
+    
+    # Analizar frecuencia de posts
+    posts_dia = features.get('posts_per_day', 0)
+    total_posts = features.get('posts_count', 0)
+    if posts_dia > 50:
+        puntos.append(f"Frecuencia de publicación muy alta: {posts_dia:.1f} posts/día ({total_posts} posts totales)")
+    elif posts_dia < 0.1:
+        puntos.append(f"Frecuencia de publicación muy baja: {posts_dia:.2f} posts/día ({total_posts} posts totales)")
+    else:
+        puntos.append(f"Frecuencia de publicación normal: {posts_dia:.1f} posts/día ({total_posts} posts totales)")
+    
+    # Analizar longitud de posts
+    longitud = features.get('avg_post_length', 0)
+    if longitud < 20:
+        puntos.append(f"Posts muy cortos (promedio {longitud:.0f} caracteres): posible contenido automatizado o spam")
+    elif longitud > 200:
+        puntos.append(f"Posts extensos (promedio {longitud:.0f} caracteres): contenido elaborado y detallado")
+    else:
+        puntos.append(f"Longitud de posts normal (promedio {longitud:.0f} caracteres)")
+    
+    # Analizar edad de cuenta vs actividad
+    dias_cuenta = features.get('account_age_days', 0)
+    if dias_cuenta < 30:
+        if posts_dia > 10:
+            puntos.append(f"Cuenta muy nueva ({dias_cuenta} días) con actividad sospechosamente alta")
+        else:
+            puntos.append(f"Cuenta reciente ({dias_cuenta} días) con actividad normal para un usuario nuevo")
+    elif dias_cuenta > 365:
+        puntos.append(f"Cuenta establecida ({dias_cuenta} días, ~{dias_cuenta/365:.1f} años) con historial prolongado")
+    else:
+        puntos.append(f"Cuenta con {dias_cuenta} días de antigüedad")
+    
+    # Analizar interacciones
+    avg_likes = features.get('avg_likes_per_post', 0)
+    avg_replies = features.get('avg_replies_per_post', 0)
+    if avg_likes < 1 and avg_replies < 1:
+        puntos.append(f"Muy poca interacción: promedio de {avg_likes:.1f} likes y {avg_replies:.1f} respuestas por post")
+    elif avg_likes > 10 or avg_replies > 5:
+        puntos.append(f"Alta interacción comunitaria: promedio de {avg_likes:.1f} likes y {avg_replies:.1f} respuestas por post")
+    else:
+        puntos.append(f"Interacción moderada: promedio de {avg_likes:.1f} likes y {avg_replies:.1f} respuestas por post")
+    
+    # Asegurar que tenemos exactamente 5 puntos
+    puntos = puntos[:5]
+    
+    # Construir explicación con frase principal y lista
+    if es_bot:
+        frase = f"🤖 <strong>Clasificado como BOT</strong> con {prob_bot:.1%} de confianza."
+    else:
+        frase = f"👤 <strong>Clasificado como HUMANO</strong> con {(1-prob_bot):.1%} de confianza."
+    
+    return {'frase': frase, 'puntos': puntos}
+
+
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
@@ -133,6 +201,9 @@ def predict():
     threshold = 0.7
     es_bot = prob_bot > threshold
 
+    # Generar explicación
+    explicacion = generar_explicacion(features, prob_bot, es_bot)
+
     result = {
         'handle': profile.get('handle'),
         'did': profile.get('did'),
@@ -140,10 +211,12 @@ def predict():
         'prob_bot': float(prob_bot),
         'es_bot': bool(es_bot),
         'threshold': threshold,
+        'explicacion': explicacion,
         'features': {k: float(v) for k, v in features.items() if isinstance(v, (int, float))}
     }
 
     return render_template('result.html', result=result)
+
 
 
 if __name__ == '__main__':
